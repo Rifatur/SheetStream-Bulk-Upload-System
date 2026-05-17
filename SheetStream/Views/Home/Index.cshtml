@@ -1,0 +1,286 @@
+﻿@{
+    ViewData["Title"] = "Bulk Upload";
+}
+
+<div class="container mt-4">
+    <h2>Bulk Data Upload</h2>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="uploadTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button">
+                <i class="bi bi-box"></i> Products
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="party-tab" data-bs-toggle="tab" data-bs-target="#party" type="button">
+                <i class="bi bi-building"></i> Party / Dealers
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="uploadTabContent">
+
+        <!-- PRODUCTS TAB -->
+        <div class="tab-pane fade show active" id="product" role="tabpanel">
+            @await Html.PartialAsync("_UploadSection", new {
+            Type = "Product",
+                        SampleName = "sample_products",
+                        PreviewAction = "Preview",
+                        SubmitAction = "Submit"
+                        })
+        </div>
+
+        <!-- PARTY/DEALER TAB -->
+        <div class="tab-pane fade" id="party" role="tabpanel">
+            @await Html.PartialAsync("_UploadSection", new {
+                        Type = "PartyDealer",
+                        SampleName = "sample_party_dealers",
+                        PreviewAction = "PreviewPartyDealers",
+                        SubmitAction = "SubmitPartyDealers"
+                        })
+        </div>
+    </div>
+</div>
+
+<!-- Shared Template -->
+<script type="text/template" id="uploadTemplate">
+    <div class="upload-section">
+        <!-- Download Samples -->
+        <div class="alert alert-info">
+            <strong>Download Sample:</strong>
+            <a href="/Home/DownloadSample?format=xlsx" class="btn btn-sm btn-outline-primary sample-xlsx">
+                <i class="bi bi-file-earmark-excel"></i> Excel (.xlsx)
+            </a>
+            <a href="/Home/DownloadSample?format=csv" class="btn btn-sm btn-outline-secondary sample-csv">
+                <i class="bi bi-file-earmark-text"></i> CSV (.csv)
+            </a>
+        </div>
+
+        <!-- Upload -->
+        <div class="card mb-4 upload-card">
+            <div class="card-header">Step 1: Upload File</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <input type="file" class="form-control file-input" accept=".csv,.xlsx,.xls" />
+                    <div class="form-text">Supported: Excel & CSV. Max 10,000+ rows.</div>
+                </div>
+                <button class="btn btn-primary btn-preview">
+                    <span class="spinner-border spinner-border-sm d-none preview-spinner"></span>
+                    Preview Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card mb-4 d-none preview-card">
+            <div class="card-header">
+                Preview Results <span class="badge bg-success ms-2 preview-stats"></span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger d-none error-summary">
+                    <h5>Validation Errors:</h5>
+                    <ul class="error-list"></ul>
+                </div>
+
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm table-striped preview-table">
+                        <thead class="table-dark sticky-top">
+                            <!-- Dynamic headers -->
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    <button class="btn btn-success btn-lg btn-submit" disabled>
+                        <span class="spinner-border spinner-border-sm d-none submit-spinner"></span>
+                        Submit <span class="submit-count">0</span> Records
+                    </button>
+                    <button class="btn btn-outline-secondary btn-reset">Start Over</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="card d-none result-card">
+            <div class="card-header">Processing Results</div>
+            <div class="card-body">
+                <div class="progress mb-3 d-none progress-bar-container">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                </div>
+                <div class="result-message"></div>
+            </div>
+        </div>
+    </div>
+</script>
+
+@section Scripts {
+    <script>
+        $(function () {
+            // Initialize both upload sections
+            initUploadSection('#product', 'Product', 'Preview', 'Submit');
+            initUploadSection('#party', 'PartyDealer', 'PreviewPartyDealers', 'SubmitPartyDealers');
+
+            function initUploadSection(container, type, previewAction, submitAction) {
+                const $container = $(container);
+                const template = $('#uploadTemplate').html();
+                $container.html(template);
+
+                let previewData = null;
+                const $section = $container.find('.upload-section');
+
+                // Update sample download links
+                $section.find('.sample-xlsx').attr('href', `/Home/Download${type}Sample?format=xlsx`);
+                $section.find('.sample-csv').attr('href', `/Home/Download${type}Sample?format=csv`);
+
+                // Preview
+                $section.find('.btn-preview').click(async function () {
+                    const fileInput = $section.find('.file-input')[0];
+                    if (!fileInput.files.length) { alert('Please select a file'); return; }
+
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+
+                    $section.find('.preview-spinner').removeClass('d-none');
+                    $(this).prop('disabled', true);
+
+                    try {
+                        const response = await fetch(`/Home/${previewAction}`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.error || 'Preview failed');
+
+                        previewData = result;
+                        displayPreview(result, type);
+
+                    } catch (error) {
+                        alert('Error: ' + error.message);
+                    } finally {
+                        $section.find('.preview-spinner').addClass('d-none');
+                        $(this).prop('disabled', false);
+                    }
+                });
+
+                function displayPreview(data, type) {
+                    $section.find('.upload-card').addClass('d-none');
+                    $section.find('.preview-card').removeClass('d-none');
+
+                    const validCount = data.validRecords.length;
+                    const errorCount = data.errors.length;
+                    $section.find('.preview-stats').text(`${validCount} valid / ${data.totalRows} total`);
+
+                    // Errors
+                    if (data.hasErrors) {
+                        $section.find('.error-summary').removeClass('d-none');
+                        const $errorList = $section.find('.error-list').empty();
+                        data.errors.forEach(err => {
+                            $errorList.append(`<<li>Row ${err.rowNumber}, ${err.field}: ${err.message}</li>`);
+                        });
+                    }
+
+                    // Table Headers & Body
+                    const $thead = $section.find('.preview-table thead').empty();
+                    const $tbody = $section.find('.preview-table tbody').empty();
+
+                    if (type === 'Product') {
+                        $thead.append(`<<tr><th>#</th><th>Name</th><th>SKU</th><th>Category</th><th>Price</th><th>Stock</th><th>Description</th></tr>`);
+                        data.validRecords.forEach((row, idx) => {
+                            $tbody.append(`<<tr>
+                                <td>${idx + 1}</td>
+                                <td>${escapeHtml(row.name)}</td>
+                                <td>${escapeHtml(row.sku || '-')}</td>
+                                <td>${escapeHtml(row.category || '-')}</td>
+                                <td>$${row.price?.toFixed(2) || '0.00'}</td>
+                                <td>${row.stockQuantity || 0}</td>
+                                <td>${escapeHtml(row.description || '-').substring(0, 50)}...</td>
+                            </tr>`);
+                        });
+                    } else {
+                        // PartyDealer columns
+                        $thead.append(`<<tr><th>#</th><th>Code</th><th>Name</th><th>Contact</th><th>Phone</th><th>City</th><th>State</th><th>GST</th><th>Credit Limit</th></tr>`);
+                        data.validRecords.forEach((row, idx) => {
+                            $tbody.append(`<<tr>
+                                <td>${idx + 1}</td>
+                                <td>${escapeHtml(row.code)}</td>
+                                <td>${escapeHtml(row.name)}</td>
+                                <td>${escapeHtml(row.contactPerson || '-')}</td>
+                                <td>${escapeHtml(row.phone || '-')}</td>
+                                <td>${escapeHtml(row.city || '-')}</td>
+                                <td>${escapeHtml(row.state || '-')}</td>
+                                <td>${escapeHtml(row.gstNumber || '-')}</td>
+                                <td>${row.creditLimit ? '$' + row.creditLimit.toFixed(2) : '-'}</td>
+                            </tr>`);
+                        });
+                    }
+
+                    if (validCount > 0) {
+                        $section.find('.btn-submit').prop('disabled', false);
+                        $section.find('.submit-count').text(validCount);
+                    }
+                }
+
+                // Submit
+                $section.find('.btn-submit').click(async function () {
+                    if (!previewData?.validRecords.length) return;
+
+                    $(this).prop('disabled', true);
+                    $section.find('.submit-spinner').removeClass('d-none');
+                    $section.find('.progress-bar-container').removeClass('d-none');
+                    $section.find('.result-card').removeClass('d-none');
+
+                    try {
+                        const records = previewData.validRecords;
+                        const chunkSize = 5000;
+                        let totalInserted = 0;
+                        let allMessages = [];
+
+                        for (let i = 0; i < records.length; i += chunkSize) {
+                            const chunk = records.slice(i, i + chunkSize);
+                            const response = await fetch(`/Home/${submitAction}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(chunk)
+                            });
+                            const result = await response.json();
+                            if (!response.ok) throw new Error(result.error);
+
+                            totalInserted += result.insertedCount || result.insertedCount;
+                            if (result.messages) allMessages.push(...result.messages);
+                        }
+
+                        $section.find('.result-message').html(`
+                            <div class="alert alert-success">
+                                <h4>Success! Inserted ${totalInserted} records</h4>
+                                <ul>${allMessages.map(m => `<li>${m}</li>`).join('')}</ul>
+                            </div>
+                        `);
+
+                    } catch (error) {
+                        $section.find('.result-message').html(`
+                            <div class="alert alert-danger"><h4>Failed</h4><p>${error.message}</p></div>
+                        `);
+                    } finally {
+                        $section.find('.submit-spinner').addClass('d-none');
+                        $section.find('.progress-bar-container').addClass('d-none');
+                    }
+                });
+
+                // Reset
+                $section.find('.btn-reset').click(function () {
+                    $section.find('.upload-card').removeClass('d-none');
+                    $section.find('.preview-card, .result-card').addClass('d-none');
+                    $section.find('.file-input').val('');
+                    previewData = null;
+                });
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                return $('<div>').text(text).html();
+            }
+        });
+    </script>
+}

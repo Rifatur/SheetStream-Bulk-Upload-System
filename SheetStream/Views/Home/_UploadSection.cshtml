@@ -1,0 +1,168 @@
+﻿@model dynamic
+
+@{
+    var type = Model.Type as string ?? "Product";
+    var sampleName = Model.SampleName as string ?? "sample";
+    var previewAction = Model.PreviewAction as string ?? "Preview";
+    var submitAction = Model.SubmitAction as string ?? "Submit";
+    var isProduct = type == "Product";
+}
+
+<div class="upload-section" data-type="@type" data-preview-action="@previewAction" data-submit-action="@submitAction">
+
+    <!-- Download Samples -->
+    <div class="alert alert-info d-flex align-items-center gap-2 flex-wrap">
+        <strong><i class="bi bi-download"></i> Download Sample:</strong>
+        <a href="/BulkUpload/DownloadSample?format=xlsx&name=@sampleName" class="btn btn-sm btn-outline-primary sample-xlsx">
+            <i class="bi bi-file-earmark-excel"></i> Excel (.xlsx)
+        </a>
+        <a href="/BulkUpload/DownloadSample?format=csv&name=@sampleName" class="btn btn-sm btn-outline-secondary sample-csv">
+            <i class="bi bi-file-earmark-text"></i> CSV (.csv)
+        </a>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div class="card mb-4 upload-card border-primary">
+        <div class="card-header bg-primary text-white">
+            <strong>Step 1:</strong> Upload @(isProduct ? "Product" : "Party/Dealer") File
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <input type="file" class="form-control file-input" accept=".csv,.xlsx,.xls" />
+                <div class="form-text text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    Supported: Excel (.xlsx, .xls) and CSV. Optimized for 10,000+ rows.
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-preview">
+                    <span class="spinner-border spinner-border-sm d-none preview-spinner"></span>
+                    <i class="bi bi-eye"></i> Preview Data
+                </button>
+                <button class="btn btn-outline-secondary btn-clear-file">
+                    <i class="bi bi-x-lg"></i> Clear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Preview Results -->
+    <div class="card mb-4 d-none preview-card border-success">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <span><strong>Step 2:</strong> Preview Results</span>
+            <span class="badge bg-light text-dark preview-stats">0 valid / 0 total</span>
+        </div>
+        <div class="card-body">
+            <!-- Error Summary -->
+            <div class="alert alert-danger d-none error-summary">
+                <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Validation Errors Found</h6>
+                <div class="error-list-container" style="max-height: 200px; overflow-y: auto;">
+                    <ul class="error-list mb-0 small"></ul>
+                </div>
+            </div>
+
+            <!-- Success Summary (no errors) -->
+            <div class="alert alert-success d-none no-errors-alert">
+                <i class="bi bi-check-circle"></i> All records validated successfully! Ready to submit.
+            </div>
+
+            <!-- Data Preview Table -->
+            <div class="table-responsive border rounded" style="max-height: 450px; overflow-y: auto;">
+                <table class="table table-sm table-striped table-hover preview-table mb-0">
+                    <thead class="table-dark sticky-top">
+                        <!-- Dynamic headers injected by JS -->
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-muted small mt-1 preview-note d-none">
+                <i class="bi bi-info-circle"></i> Showing first 100 rows. Total valid records: <span class="valid-count">0</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-3 d-flex gap-2 flex-wrap">
+                <button class="btn btn-success btn-lg btn-submit" disabled>
+                    <span class="spinner-border spinner-border-sm d-none submit-spinner"></span>
+                    <i class="bi bi-cloud-upload"></i>
+                    Submit <span class="submit-count badge bg-light text-success ms-1">0</span> Records
+                </button>
+                <button class="btn btn-warning btn-preview-again">
+                    <i class="bi bi-arrow-clockwise"></i> Re-Preview
+                </button>
+                <button class="btn btn-outline-secondary btn-reset">
+                    <i class="bi bi-x-lg"></i> Start Over
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Processing Progress -->
+    <div class="card mb-4 d-none progress-card border-info">
+        <div class="card-header bg-info text-white">
+            <strong><i class="bi bi-hourglass-split"></i> Processing...</strong>
+        </div>
+        <div class="card-body">
+            <div class="progress mb-3" style="height: 30px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                     role="progressbar" style="width: 100%">
+                    Processing large dataset...
+                </div>
+            </div>
+            <p class="text-muted mb-0">
+                <i class="bi bi-database"></i> Inserting in batches of 1,000 records. Please do not close this window.
+            </p>
+        </div>
+    </div>
+
+    <!-- Step 4: Final Results -->
+    <div class="card d-none result-card">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span><strong><i class="bi bi-clipboard-check"></i> Processing Results</strong></span>
+            <span class="result-time badge bg-light text-dark small"></span>
+        </div>
+        <div class="card-body">
+            <div class="result-message"></div>
+
+            <!-- Detailed Stats -->
+            <div class="result-stats mt-3 d-none">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white text-center p-2">
+                            <h4 class="mb-0 inserted-count">0</h4>
+                            <small>Inserted</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-danger text-white text-center p-2">
+                            <h4 class="mb-0 failed-count">0</h4>
+                            <small>Failed</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white text-center p-2">
+                            <h4 class="mb-0 time-taken">0s</h4>
+                            <small>Time Taken</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-secondary text-white text-center p-2">
+                            <h4 class="mb-0 total-processed">0</h4>
+                            <small>Total</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button class="btn btn-primary btn-new-upload">
+                    <i class="bi bi-plus-lg"></i> Upload Another File
+                </button>
+                <button class="btn btn-outline-secondary btn-download-report d-none">
+                    <i class="bi bi-download"></i> Download Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

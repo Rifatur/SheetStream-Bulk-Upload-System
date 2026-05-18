@@ -1,0 +1,5 @@
+| Code  | Name             | ContactPerson | Phone      | Email              | Address          | City      | State       | Pincode | Country | GstNumber       | PanNumber  | DealerType  | PaymentTerms | CreditLimit | CreditDays |
+| ----- | ---------------- | ------------- | ---------- | ------------------ | ---------------- | --------- | ----------- | ------- | ------- | --------------- | ---------- | ----------- | ------------ | ----------- | ---------- |
+| DL001 | ABC Distributors | Rajesh Kumar  | 9876543210 | <abc@email.com>    | 123 Main St      | Mumbai    | Maharashtra | 400001  | India   | 27AABCU9603R1ZM | ABCDE1234F | Distributor | Net 30       | 500000      | 30         |
+| DL002 | XYZ Retailers    | Priya Sharma  | 9876543211 | <xyz@email.com>    | 456 Market Rd    | Delhi     | Delhi       | 110001  | India   | 07AAACX1234R1Z2 | XYZDE5678G | Retailer    | Net 15       | 100000      | 15         |
+| DL003 | Global Traders   | Amit Singh    | 9876543212 | <global@email.com> | 789 Trade Center | Bangalore | Karnataka   | 560001  | India   | 29AABCG4567R1Z3 | GLOBE9012H | Wholesaler  | COD          | 250000      | 7          |

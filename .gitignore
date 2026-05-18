@@ -28,7 +28,6 @@ packages/
 
 # Publish outputs
 publish/
-wwwroot/
 
 # Configuration
 appsettings.Development.json
